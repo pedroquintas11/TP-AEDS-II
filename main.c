@@ -9,5 +9,4 @@ int main() {
     ler_pocs(&entrada);
     ImprimeIndiceInvertido();
     return 0;
-    printf("git safado");
 }
