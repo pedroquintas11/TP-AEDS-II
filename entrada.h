@@ -1,5 +1,6 @@
 #ifndef ENTRADA_H
 #define ENTRADA_H
+#include "ListaOcorrencia.h"
 
 typedef struct 
 {
@@ -9,16 +10,20 @@ typedef struct
 
 typedef struct 
 {
-    int id, qtde;
-    char nome[20];
-}Palavras;
+    char nome[100];
+    ListaOcorrencias *ocorrencia;
+}PalavraInd;
 
-Palavras v[10000];
+PalavraInd v[1000];
 int total_p;
 
+void IniciaPalavra (PalavraInd *p);
 ListaArquivos leitura_arq(char *arq);
-void Insere(Palavras *pal);
-void token_palavras(Palavras *pal);
+void Insere(PalavraInd *pal);
+int insereOuAtualizaOcorrencia(ListaOcorrencias *lista, int idDoc);
+void InserePalavraIndice(const char *palavra_texto, int idDoc);
+void token_palavras(PalavraInd *pal);
 void ler_pocs(ListaArquivos *lista);
+void ImprimeIndiceInvertido();
 
 #endif

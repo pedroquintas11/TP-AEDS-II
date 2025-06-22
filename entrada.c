@@ -6,62 +6,129 @@
 #include "entrada.h"
 int total_p = 0;
 
-ListaArquivos leitura_arq(char *arq) {
+void IniciaPalavra(PalavraInd *p)
+{
+    p->ocorrencia = (ListaOcorrencias*)malloc(sizeof(ListaOcorrencias));
+    FLOVazia(p->ocorrencia);
+}
+
+ListaArquivos leitura_arq(char *arq)
+{
     int i;
     ListaArquivos lista;
     lista.qtd_arq = 0;
 
     FILE *entrada = fopen(arq, "r");
-    if (!entrada) {
+    if (!entrada)
+    {
         printf("Erro ao abrir os arquivo(s).\n");
         exit(1);
     }
 
     fscanf(entrada, "%d", &lista.qtd_arq);
 
-    for (i=0; i<lista.qtd_arq; i++) {
+    for (i = 0; i < lista.qtd_arq; i++)
+    {
         fscanf(entrada, "%s", lista.nomes[i]);
     }
     fclose(entrada);
-    return(lista);
+    return (lista);
 }
 
-void Insere(Palavras *pal) {
+// void Insere(PalavraInd *pal)
+// {
+//     int i;
+//     for (i = 0; i < total_p; i++)
+//     {
+//         if (strcmp(v[i].nome, pal->nome) == 0 && v[i].ocorrencia->Primeiro->item.id == pal->ocorrencia->Primeiro->item.id)
+//         {
+//             v[i].ocorrencia->Primeiro->item.qtde++;
+//             return;
+//         }
+//     }
+//     strcpy(v[total_p].nome, pal->nome);
+//     v[total_p].ocorrencia->Primeiro->item.id = pal->ocorrencia->Primeiro->item.id;
+//     v[total_p].ocorrencia->Primeiro->item.qtde = 1;
+//     total_p++;
+// }
+
+void InserePalavraIndice(const char *p, int idDoc) { // teria que passar a patrica e uma hash para a insercao final
     int i;
-    for (i=0; i<total_p; i++) {
-        if (strcmp(v[i].nome, pal->nome) == 0 && v[i].id == pal->id) {
-            v[i].qtde++;
-            return;
+    for (i = 0; i < total_p; i++) {
+        if (strcmp(v[i].nome, p) == 0) { // Palavra já existe no índice geral 
+            insereOuAtualizaOcorrencia(v[i].ocorrencia, idDoc);
+            return; 
         }
     }
-    strcpy(v[total_p].nome, pal->nome);
-    v[total_p].id = pal->id;
-    v[total_p].qtde = 1;
-    total_p++;
+    if (total_p < 10000) { // adiciona
+        strcpy(v[total_p].nome, p);
+        v[total_p].ocorrencia = (ListaOcorrencias*)malloc(sizeof(ListaOcorrencias));
+        if (v[total_p].ocorrencia == NULL) {
+            printf("Erro de alocacao de memoria.\n");
+        }
+        IniciaPalavra(&v[total_p]);
+        insereOuAtualizaOcorrencia(v[total_p].ocorrencia, idDoc);
+        total_p++;
+    }
 }
 
-void token_palavras(Palavras *pal){
+void token_palavras(PalavraInd *pal)
+{
     int i, j = 0;
     char c;
-    for (i = 0; pal->nome[i] != '\0'; i++) {
+    for (i = 0; pal->nome[i] != '\0'; i++)
+    {
         c = pal->nome[i];
-        if (c >= 'A' && c <= 'Z') c += 32; // minúscula
-        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+        if (c >= 'A' && c <= 'Z')
+            c += 32; // minúscula
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+        {
             pal->nome[j++] = c;
         }
     }
     pal->nome[j] = '\0';
 }
 
-void ler_pocs(ListaArquivos *lista) {
+void ler_pocs(ListaArquivos *lista)
+{
     int i;
-    for (i=0; i<lista->qtd_arq; i++) {
+    for (i = 0; i < lista->qtd_arq; i++)
+    {
         FILE *arq = fopen(lista->nomes[i], "r");
-        Palavras pal;
-        pal.id = i + 1;
-        while (fscanf(arq, "%s", pal.nome) == 1) {
-            token_palavras(&pal);
-            Insere(&pal); // tem que adptar para inserir na hash e na patricia
+        PalavraInd p;
+        int idDoc = i + 1;
+        IniciaPalavra(&p);
+        while (fscanf(arq, "%s", p.nome) == 1)
+        {
+            token_palavras(&p);
+            InserePalavraIndice(p.nome, idDoc); // tem que adptar para inserir na hash e na patricia
         }
     }
+}
+
+void ImprimeIndiceInvertido() {
+    printf("\n--- Conteudo do Indice Invertido ---\n");
+    if (total_p == 0) {
+        printf("Indice invertido vazio.\n");
+        return;
+    }
+
+    // Percorre o vetor 'v' 
+    for (int i = 0; i < total_p; i++) {
+        printf("%s -> ", v[i].nome);
+
+        if (v[i].ocorrencia != NULL) {
+            Ocorrencia *atual = v[i].ocorrencia->Primeiro;
+            // Percorre a lista encadeada de ocorrências para a palavra atual
+            while (atual != NULL) {
+                printf("<%d, %d> ", atual->item.id, atual->item.qtde);
+                atual = atual->prox;
+            }
+        } 
+        else {
+            printf("Nenhuma ocorrencia (erro logico ou palavra ainda sem doc)");
+        }
+        printf("\n"); // Nova linha para a próxima palavra
+    }
+    printf("----------------------------------\n");
 }
