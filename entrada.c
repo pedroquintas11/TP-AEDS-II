@@ -4,6 +4,8 @@
 #include <ctype.h>
 
 #include "entrada.h"
+
+PalavraInd v[1000];
 int total_p = 0;
 
 void IniciaPalavra(PalavraInd *p)
@@ -26,7 +28,7 @@ ListaArquivos leitura_arq(char *arq)
     }
 
     fscanf(entrada, "%d", &lista.qtd_arq);
-
+    fgetc(entrada);
     for (i = 0; i < lista.qtd_arq; i++)
     {
         fscanf(entrada, "%s", lista.nomes[i]);
@@ -60,12 +62,8 @@ void InserePalavraIndice(const char *p, int idDoc) { // teria que passar a patri
             return; 
         }
     }
-    if (total_p < 10000) { // adiciona
+    if (total_p < 1000) { // adiciona palavra nova
         strcpy(v[total_p].nome, p);
-        v[total_p].ocorrencia = (ListaOcorrencias*)malloc(sizeof(ListaOcorrencias));
-        if (v[total_p].ocorrencia == NULL) {
-            printf("Erro de alocacao de memoria.\n");
-        }
         IniciaPalavra(&v[total_p]);
         insereOuAtualizaOcorrencia(v[total_p].ocorrencia, idDoc);
         total_p++;
@@ -95,24 +93,32 @@ void ler_pocs(ListaArquivos *lista)
     for (i = 0; i < lista->qtd_arq; i++)
     {
         FILE *arq = fopen(lista->nomes[i], "r");
-        PalavraInd p;
-        int idDoc = i + 1;
-        IniciaPalavra(&p);
-        while (fscanf(arq, "%s", p.nome) == 1)
+        if (!arq) 
         {
-            token_palavras(&p);
-            InserePalavraIndice(p.nome, idDoc); // tem que adptar para inserir na hash e na patricia
+            printf("Erro ao abrir o arquivo: %s\n", lista->nomes[i]);
+            continue;
         }
+        PalavraInd p_temp;
+        int idDoc = i + 1;
+        while (fscanf(arq, "%s", p_temp.nome) == 1)
+        {
+            token_palavras(&p_temp);
+            if(strlen(p_temp.nome) > 0)
+            {
+                InserePalavraIndice(p_temp.nome, idDoc); // insere no vetor
+                InsereHash(p_temp.nome, idDoc, p, Tabela);
+            }            
+        }
+        fclose(arq);
     }
 }
 
 void ImprimeIndiceInvertido() {
-    printf("\n--- Conteudo do Indice Invertido ---\n");
+    printf("\n--- Conteudo do Indice Invertido (vetor) ---\n");
     if (total_p == 0) {
         printf("Indice invertido vazio.\n");
         return;
     }
-
     // Percorre o vetor 'v' 
     for (int i = 0; i < total_p; i++) {
         printf("%s -> ", v[i].nome);

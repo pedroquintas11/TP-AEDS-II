@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-g -Wall
+CFLAGS=-Wall -Wextra -g
 SRC=$(wildcard *.c)
 OBJ=$(SRC:.c=.o)
 TARGET=app.exe
@@ -12,3 +12,4 @@ $(TARGET): $(OBJ)
 
 clean:
 	del /Q $(OBJ) $(TARGET)
+
