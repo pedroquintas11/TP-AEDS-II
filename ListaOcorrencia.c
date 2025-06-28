@@ -59,3 +59,30 @@ int insereOuAtualizaOcorrencia(ListaOcorrencias *lista, int idDoc)
     }
     return comparacoes;
 }
+
+
+
+// Função auxiliar para obter a frequência de um termo (f_ji) em um documento específico
+int obter_fji(ListaOcorrencias* lista, int idDoc) {
+    if (!lista) return 0;
+    Ocorrencia* atual = lista->Primeiro;
+    while (atual != NULL) {
+        if (atual->item.id == idDoc) {
+            return atual->item.qtde;
+        }
+        atual = atual->prox;
+    }
+    return 0; 
+}
+
+// Função auxiliar para contar em quantos documentos um termo aparece (d_j)
+int obter_dj(ListaOcorrencias* lista) {
+    if (!lista) return 0;
+    int contador = 0;
+    Ocorrencia* atual = lista->Primeiro;
+    while (atual != NULL) {
+        contador++;
+        atual = atual->prox;
+    }
+    return contador;
+}

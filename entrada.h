@@ -4,10 +4,11 @@
 #include "ListaOcorrencia.h"
 #include "hash.h"
 
-typedef struct 
+typedef struct ListaArquivos 
 {
     int qtd_arq;
     char nomes[100][100];
+    int n_i[100];
 }ListaArquivos;
 
 typedef struct 

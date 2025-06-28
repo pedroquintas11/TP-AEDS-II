@@ -3,9 +3,11 @@
 #include <sys/time.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #include "hash.h"
 #include "entrada.h"
+
 
 TipoDicionario Tabela;
 TipoPesos p;
@@ -125,53 +127,148 @@ int Compara (const void *a, const void *b)
 
 void ImprimeOrdenadohash(TipoDicionario Tabela) 
 {
-    int i;
-    TipoApontador Aux;
-    int totalDeItens = 0;
+  int i;
+  TipoApontador Aux;
+  int totalDeItens = 0;
 
-    for (i = 0; i < M; i++) {
-        if (!Vaziahash(Tabela[i])) {
-            Aux = Tabela[i].Primeiro->Prox;
-            while (Aux != NULL) {
-                totalDeItens++;
-                Aux = Aux->Prox;
-            }
-        }
-    }
-    if (totalDeItens == 0) {
-        printf("A tabela está vazia.\n");
-        return;
-    }
-    TipoItem *todosOsItens = malloc(totalDeItens * sizeof(TipoItem));
-    if (todosOsItens == NULL) {
-        printf("Falha ao alocar memoria para ordenacao.\n");
-        return;
-    }
-    int k = 0; 
-    for (i = 0; i < M; i++) {
-        if (!Vaziahash(Tabela[i])) {
-            Aux = Tabela[i].Primeiro->Prox;
-            while (Aux != NULL) {
-                todosOsItens[k] = Aux->Item;
-                k++;
-                Aux = Aux->Prox;
-            }
-        }
-    }
-    qsort(todosOsItens, totalDeItens, sizeof(TipoItem), Compara);
-    printf("--- Indice Invertido (Hash) ---\n");
-    for (i = 0; i < totalDeItens; i++) {
-        printf("%s -> ", todosOsItens[i].palavra);
-        if (todosOsItens[i].Ocorrencia != NULL) {
-            Ocorrencia *atual = todosOsItens[i].Ocorrencia->Primeiro;
-            while (atual != NULL) {
-                printf("<%d, %d> ", atual->item.id, atual->item.qtde);
-                atual = atual->prox;
-            }
-        }
-        printf("\n");
-    }
-    printf("----------------------------------\n");
-    free(todosOsItens);
+  for (i = 0; i < M; i++) {
+      if (!Vaziahash(Tabela[i])) {
+          Aux = Tabela[i].Primeiro->Prox;
+          while (Aux != NULL) {
+              totalDeItens++;
+              Aux = Aux->Prox;
+          }
+      }
+  }
+  if (totalDeItens == 0) {
+      printf("A tabela está vazia.\n");
+      return;
+  }
+  TipoItem *todosOsItens = malloc(totalDeItens * sizeof(TipoItem));
+  if (todosOsItens == NULL) {
+      printf("Falha ao alocar memoria para ordenacao.\n");
+      return;
+  }
+  int k = 0; 
+  for (i = 0; i < M; i++) {
+    if (!Vaziahash(Tabela[i])) {
+          Aux = Tabela[i].Primeiro->Prox;
+          while (Aux != NULL) {
+              todosOsItens[k] = Aux->Item;
+              k++;
+              Aux = Aux->Prox;
+          }
+      }
+  }
+  qsort(todosOsItens, totalDeItens, sizeof(TipoItem), Compara);
+  printf("--- Indice Invertido (Hash) ---\n");
+  for (i = 0; i < totalDeItens; i++) {
+      printf("%s -> ", todosOsItens[i].palavra);
+      if (todosOsItens[i].Ocorrencia != NULL) {
+          Ocorrencia *atual = todosOsItens[i].Ocorrencia->Primeiro;
+          while (atual != NULL) {
+              printf("<%d, %d> ", atual->item.id, atual->item.qtde);
+              atual = atual->prox;
+          }
+      }
+      printf("\n");
+  }
+  printf("----------------------------------\n");
+  free(todosOsItens);
 }
+
+// Função de comparação para o qsort, para ordenar os resultados por relevancia (decrescente)
+int comparar_resultados(const void *a, const void *b) 
+{
+    ResultadoBusca *resA = (ResultadoBusca *)a;
+    ResultadoBusca *resB = (ResultadoBusca *)b;
+    if (resA->relev < resB->relev) return 1;
+    if (resA->relev > resB->relev) return -1;
+    return 0;
+}
+
+void buscar_por_relevancia_hash(const char* consulta, struct ListaArquivos *docs, TipoDicionario T, TipoPesos p) 
+{
+    // 1. Processar os termos da consulta
+    char copia_consulta[200];
+    strcpy(copia_consulta, consulta);
+
+    char *termos_consulta[20]; // Suporta até 20 termos na consulta
+    int qtd_termos_consulta = 0;
+    char *token = strtok(copia_consulta, " ");
+    while (token != NULL && qtd_termos_consulta < 20) {
+        // usando a mesma logica de tokenizaçao(nao da para usar a funçao)
+        int i, j = 0;
+        char c;
+        for (i = 0; token[i] != '\0'; i++) {
+            c = token[i];
+            if (c >= 'A' && c <= 'Z')
+                c += 32; // Converte para minúscula
+            if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
+                token[j++] = c;
+            }
+        }
+        token[j] = '\0';
+        if (strlen(token) > 0) {
+             termos_consulta[qtd_termos_consulta++] = token;
+        }
+       
+        token = strtok(NULL, " ");
+    }
+    
+    int V = docs->qtd_arq;
+    ResultadoBusca resultados[V];
+    int resultados_count = 0;
+
+    // 2. Calcular a relevância r(i) para cada documento i
+    for (int i = 0; i < V; i++) {
+        double soma_pesos_w = 0.0;
+        int n_i = docs->n_i[i]; // Número de termos distintos no documento i
+        int doc_id = i + 1;
+
+        if (n_i == 0) continue; // Pula documentos vazios
+
+        // Para cada termo j na consulta
+        for (int j = 0; j < qtd_termos_consulta; j++) {
+            const char* termo_j = termos_consulta[j];
+            
+            // Pesquisa o termo na hash
+            TipoApontador no_palavra = PesquisaHash((char*)termo_j, p, T);
+
+            if (no_palavra != NULL) {
+                // f_ji = frequência do termo j no documento i
+                int f_ji = obter_fji(no_palavra->Item.Ocorrencia, doc_id);
+
+                if (f_ji > 0) {
+                    // d_j = número de documentos que contêm o termo j
+                    int d_j = obter_dj(no_palavra->Item.Ocorrencia);
+                    
+                    // w_ji = f_ji * log2(N / d_j)
+                    double w_ji = (double)f_ji * log2((double)N / d_j);
+                    soma_pesos_w += w_ji;
+                }
+            }
+        }
+
+        // r(i) = (1 / n_i) * soma_pesos_w
+        if (soma_pesos_w > 0) {
+            double r_i = (1.0 / n_i) * soma_pesos_w;
+            strcpy(resultados[resultados_count].nome_arquivo, docs->nomes[i]);
+            resultados[resultados_count].relev = r_i;
+            resultados_count++;
+        }
+    }
+
+    // 3. Ordenar os resultados por relevância
+    qsort(resultados, resultados_count, sizeof(ResultadoBusca), comparar_resultados);
+    if (resultados_count == 0) {
+        printf("Nenhum documento relevante encontrado.\n");
+    } else {
+        printf("Documentos encontrados (em ordem de relevancia):\n");
+        for (int i = 0; i < resultados_count; i++) {
+            printf("%d. %s \n", i + 1, resultados[i].nome_arquivo);
+        }
+    }
+}
+
  

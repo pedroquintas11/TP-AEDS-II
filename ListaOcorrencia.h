@@ -20,5 +20,6 @@ typedef struct ListaOcorrencias
 
 void FLOVazia(ListaOcorrencias *lista);
 int insereOuAtualizaOcorrencia(ListaOcorrencias *lista, int idDoc);
-
+int obter_fji(ListaOcorrencias* lista, int idDoc);
+int obter_dj(ListaOcorrencias* lista);
 #endif

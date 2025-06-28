@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "entrada.h"
 
@@ -98,6 +99,12 @@ void ler_pocs(ListaArquivos *lista)
             printf("Erro ao abrir o arquivo: %s\n", lista->nomes[i]);
             continue;
         }
+        char (*palavras_unicas)[100] = malloc(10000 * sizeof(char[100]));
+        if (palavras_unicas == NULL) {
+            printf("Falha ao alocar memoria!\n");
+            continue;
+        }
+        int tot_unicas=0;
         PalavraInd p_temp;
         int idDoc = i + 1;
         while (fscanf(arq, "%s", p_temp.nome) == 1)
@@ -107,9 +114,25 @@ void ler_pocs(ListaArquivos *lista)
             {
                 InserePalavraIndice(p_temp.nome, idDoc); // insere no vetor
                 InsereHash(p_temp.nome, idDoc, p, Tabela);
+            
+                int encontrada = 0;
+                for(int k = 0; k < tot_unicas; k++)
+                {
+                    if(strcmp(palavras_unicas[k], p_temp.nome) == 0)
+                    {
+                        encontrada = 1;
+                        break;
+                    }
+                }
+                if(!encontrada && tot_unicas < 10000){
+                    strcpy(palavras_unicas[tot_unicas],p_temp.nome);
+                    tot_unicas++;
+                }
             }            
         }
         fclose(arq);
+        lista->n_i[i] = tot_unicas;
+        free(palavras_unicas);
     }
 }
 

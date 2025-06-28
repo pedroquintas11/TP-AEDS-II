@@ -29,10 +29,17 @@ typedef struct TipoLista {
 } TipoLista;
 
 typedef TipoLista TipoDicionario[M];
+struct ListaArquivos;
 
 extern TipoDicionario Tabela;
 extern TipoPesos p;
 extern TipoApontador i;
+
+typedef struct {
+    char nome_arquivo[100];
+    double relev;
+} ResultadoBusca;
+
 
 
 void FLVaziahash(TipoLista *Lista);
@@ -47,5 +54,6 @@ void Imp(TipoLista Lista);
 void Imprime(TipoDicionario Tabela);
 int Compara (const void *a, const void *b);
 void ImprimeOrdenadohash(TipoDicionario Tabela);
+void buscar_por_relevancia_hash(const char* consulta, struct ListaArquivos *docs, TipoDicionario T, TipoPesos p);
 
 #endif
